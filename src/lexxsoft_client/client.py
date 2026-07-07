@@ -24,6 +24,7 @@ class LexxClient:
         email: str | None = None,
         password: str | None = None,
         totp_code: str | None = None,
+        access_token: str | None = None,
         timeout: int = TIMEOUT,
     ) -> None:
         self.base_url = base_url.rstrip("/")
@@ -39,7 +40,9 @@ class LexxClient:
         self.email = email or os.getenv("LEXX_EMAIL")
         self.password = password or os.getenv("LEXX_PASSWORD")
         self.totp_code = totp_code or os.getenv("LEXX_TOTP_CODE")
-        self.access_token: str | None = None
+        self.access_token = access_token or os.getenv("LEXX_ACCESS_TOKEN")
+        if self.access_token:
+            self.session.headers.update(self.auth_headers())
 
     def _url(self, path: str) -> str:
         path = path.lstrip("/")

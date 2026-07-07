@@ -35,9 +35,14 @@ pytest -m public -v
 
 ## Authenticated tests
 
-1. Copy `.env.example` to `.env`
-2. Fill in `LEXX_EMAIL`, `LEXX_PASSWORD`, and optionally `LEXX_TOTP_CODE`
-3. Run: `pytest tests/auth/ -v`
+1. Log in to `https://lexx-trade.com/terminal/login` in your browser.
+2. Open DevTools → Network → Fetch/XHR.
+3. Find any request to `api.lexx-trade.com` and copy the `Authorization: Bearer *** header value.
+4. Paste the token into `.env` as `LEXX_ACCESS_TOKEN=***`.
+5. Run: `pytest tests/auth/ -v`
+
+If the account has a free role, most premium endpoints will return `403 Not supported role`.
+The auth smoke tests document this behaviour.
 
 ## CI
 

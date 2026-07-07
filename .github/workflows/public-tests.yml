@@ -31,3 +31,7 @@ jobs:
         run: pytest tests/public/ -v --tb=short
         env:
           PYTHONPATH: src
+
+      # Auth tests require LEXX_ACCESS_TOKEN from browser. Run locally only.
+      # - name: Run authenticated tests
+      #   run: pytest tests/auth/ -v --tb=short
