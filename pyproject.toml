@@ -26,7 +26,7 @@ addopts = "-v --tb=short"
 markers = [
     "public: public market-data endpoints (no auth required)",
     "auth: authenticated endpoints",
-    "bots: trading bots endpoints",
+    "bots: trading bots and private portfolio/order endpoints",
     "smoke: quick health checks",
     "schema: response schema validation",
     "websocket: WebSocket stream tests",

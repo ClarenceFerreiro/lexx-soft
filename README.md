@@ -21,6 +21,8 @@ the production web app and confirming behaviour against live APIs.
 - **Authenticated endpoints** with a manually-obtained access token:
   - token validity (`/api/user/me`, `/api/user/profile`)
   - RBAC for free-tier accounts (`403 Not supported role` on premium paths)
+  - private bot/order/portfolio/settings endpoints discovered in the terminal bundle (`/api/private/*`)
+  - security observation: some `/api/private/*` GET endpoints are reachable without auth
 
 ## Quick start
 
@@ -97,7 +99,8 @@ lexxsoft-api-tests/
 │   │   ├── test_okx_schema.py      # OKX schema/edge-case tests
 │   │   └── test_rate_limits.py     # Rate-limit observation tests
 │   ├── auth/
-│   │   └── test_auth_smoke.py     # Authenticated token/RBAC tests
+│   │   ├── test_auth_smoke.py     # Authenticated token/RBAC tests
+│   │   └── test_private_endpoints.py # Private bot/order/portfolio/settings tests
 │   ├── websocket/
 │   │   └── test_public_websocket.py # Public exchange WebSocket tests
 │   ├── bots/                      # Trading bot tests (reserved)
