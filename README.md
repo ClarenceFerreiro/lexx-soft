@@ -14,6 +14,10 @@ the production web app and confirming behaviour against live APIs.
     skipped in GitHub Actions because Binance blocks GitHub Cloud IP ranges
 - **LexxSoft backend smoke tests** that require no credentials:
   - `/api/auth/login` existence and reCAPTCHA behaviour
+- **WebSocket streams** used by the LexxSoft terminal:
+  - Binance Spot (`wss://stream.binance.com`)
+  - Binance Futures (`wss://fstream.binance.com`) — connection only, often no data from some regions
+  - OKX (`wss://ws.okx.com`)
 - **Authenticated endpoints** with a manually-obtained access token:
   - token validity (`/api/user/me`, `/api/user/profile`)
   - RBAC for free-tier accounts (`403 Not supported role` on premium paths)
@@ -35,6 +39,9 @@ pytest -m "public and not binance" -v
 
 # Local full run including Binance
 pytest -m public -v
+
+# WebSocket streams
+pytest -m websocket -v
 
 # Authenticated tests (requires LEXX_ACCESS_TOKEN in .env)
 pytest tests/auth/ -v
@@ -80,15 +87,17 @@ lexxsoft-api-tests/
 ├── src/lexxsoft_client/          # Thin API client
 ├── tests/
 │   ├── public/
-│   │   ├── schemas.py            # Pydantic response models
-│   │   ├── test_binance_smoke.py # Binance spot/futures smoke tests
-│   │   ├── test_binance_schema.py# Binance schema/edge-case tests
-│   │   ├── test_okx_smoke.py     # OKX + LexxSoft auth smoke tests
-│   │   └── test_okx_schema.py    # OKX schema/edge-case tests
+│   │   ├── schemas.py             # Pydantic response models
+│   │   ├── test_binance_smoke.py  # Binance spot/futures smoke tests
+│   │   ├── test_binance_schema.py # Binance schema/edge-case tests
+│   │   ├── test_okx_smoke.py      # OKX + LexxSoft auth smoke tests
+│   │   └── test_okx_schema.py     # OKX schema/edge-case tests
 │   ├── auth/
-│   │   └── test_auth_smoke.py    # Authenticated token/RBAC tests
-│   ├── bots/                     # Trading bot tests (reserved)
-│   └── conftest.py               # pytest fixtures
+│   │   └── test_auth_smoke.py     # Authenticated token/RBAC tests
+│   ├── websocket/
+│   │   └── test_public_websocket.py # Public exchange WebSocket tests
+│   ├── bots/                      # Trading bot tests (reserved)
+│   └── conftest.py                # pytest fixtures
 ├── .github/workflows/            # CI + HTML report artifacts
 ├── pyproject.toml
 ├── requirements.txt

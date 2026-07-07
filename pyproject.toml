@@ -7,6 +7,7 @@ dependencies = [
     "pytest>=8.0",
     "pytest-html>=4.0",
     "requests>=2.31",
+    "websocket-client>=1.7",
     "pydantic>=2.0",
     "python-dotenv>=1.0",
 ]
@@ -28,6 +29,7 @@ markers = [
     "bots: trading bots endpoints",
     "smoke: quick health checks",
     "schema: response schema validation",
+    "websocket: WebSocket stream tests",
     "binance: tests that hit Binance API (may be blocked from cloud CI runners)",
 ]
 
