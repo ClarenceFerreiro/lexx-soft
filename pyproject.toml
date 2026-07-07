@@ -30,6 +30,7 @@ markers = [
     "smoke: quick health checks",
     "schema: response schema validation",
     "websocket: WebSocket stream tests",
+    "rate_limit: rate-limit observation tests",
     "binance: tests that hit Binance API (may be blocked from cloud CI runners)",
 ]
 

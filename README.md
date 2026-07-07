@@ -43,6 +43,9 @@ pytest -m public -v
 # WebSocket streams
 pytest -m websocket -v
 
+# Rate-limit observation tests
+pytest -m rate_limit -v
+
 # Authenticated tests (requires LEXX_ACCESS_TOKEN in .env)
 pytest tests/auth/ -v
 
@@ -87,11 +90,12 @@ lexxsoft-api-tests/
 ├── src/lexxsoft_client/          # Thin API client
 ├── tests/
 │   ├── public/
-│   │   ├── schemas.py             # Pydantic response models
-│   │   ├── test_binance_smoke.py  # Binance spot/futures smoke tests
-│   │   ├── test_binance_schema.py # Binance schema/edge-case tests
-│   │   ├── test_okx_smoke.py      # OKX + LexxSoft auth smoke tests
-│   │   └── test_okx_schema.py     # OKX schema/edge-case tests
+│   │   ├── schemas.py              # Pydantic response models
+│   │   ├── test_binance_smoke.py   # Binance spot/futures smoke tests
+│   │   ├── test_binance_schema.py  # Binance schema/edge-case tests
+│   │   ├── test_okx_smoke.py       # OKX + LexxSoft auth smoke tests
+│   │   ├── test_okx_schema.py      # OKX schema/edge-case tests
+│   │   └── test_rate_limits.py     # Rate-limit observation tests
 │   ├── auth/
 │   │   └── test_auth_smoke.py     # Authenticated token/RBAC tests
 │   ├── websocket/
