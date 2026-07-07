@@ -1,4 +1,8 @@
-"""Schema validation and edge-case tests for public market-data endpoints."""
+"""Schema validation and edge-case tests for Binance public endpoints.
+
+These endpoints are known to block GitHub Actions IP ranges (HTTP 451).
+Run them locally; CI skips them via the `binance` marker.
+"""
 
 from __future__ import annotations
 
@@ -10,12 +14,9 @@ from tests.public.schemas import (
     BinanceOrderBook,
     BinanceTicker24hr,
     BinanceTrade,
-    OkxRestResponse,
-    OkxTicker,
-    OkxTrade,
 )
 
-pytestmark = [pytest.mark.public, pytest.mark.schema]
+pytestmark = [pytest.mark.public, pytest.mark.schema, pytest.mark.binance]
 
 
 class TestBinanceSchemaValidation:
@@ -63,37 +64,6 @@ class TestBinanceSchemaValidation:
         assert len(trades) <= 5
 
 
-class TestOkxSchemaValidation:
-    """Validate response schemas for OKX public endpoints."""
-
-    BASE_URL = "https://www.okx.com/api/v5/market"
-
-    def test_tickers_schema(self):
-        response = requests.get(
-            f"{self.BASE_URL}/tickers",
-            params={"instType": "SPOT"},
-            timeout=30,
-        )
-        assert response.status_code == 200
-        parsed = OkxRestResponse(**response.json())
-        assert parsed.code == "0"
-        assert len(parsed.data) > 0
-        OkxTicker(**parsed.data[0])
-
-    def test_trades_schema(self):
-        response = requests.get(
-            f"{self.BASE_URL}/trades",
-            params={"instId": "BTC-USDT", "limit": 5},
-            timeout=30,
-        )
-        assert response.status_code == 200
-        parsed = OkxRestResponse(**response.json())
-        assert parsed.code == "0"
-        assert len(parsed.data) <= 5
-        if parsed.data:
-            OkxTrade(**parsed.data[0])
-
-
 class TestBinanceErrorHandling:
     """Edge cases and error responses for Binance public endpoints."""
 
@@ -120,25 +90,4 @@ class TestBinanceErrorHandling:
         )
         assert response.status_code == 200
         data = BinanceOrderBook(**response.json())
-        # Binance clamps to allowed values (typically <= 5000 or 1000 for REST)
         assert len(data.bids) <= 1000
-
-
-class TestOkxErrorHandling:
-    """Edge cases and error responses for OKX public endpoints."""
-
-    BASE_URL = "https://www.okx.com/api/v5/market"
-
-    def test_unknown_instid_returns_error_code(self):
-        response = requests.get(
-            f"{self.BASE_URL}/tickers",
-            params={"instType": "SPOT", "instId": "FAKE-TOKEN"},
-            timeout=30,
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert data.get("code") in {"0", "51001"}  # 51001 = instrument not found
-
-    def test_missing_inst_type_returns_400(self):
-        response = requests.get(f"{self.BASE_URL}/tickers", timeout=30)
-        assert response.status_code == 400

@@ -28,7 +28,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run public smoke and schema tests
-        run: pytest tests/public/ --html=reports/report.html --self-contained-html -v --tb=short
+        run: pytest tests/public/ --html=reports/report.html --self-contained-html -v --tb=short -m "not binance"
         env:
           PYTHONPATH: src
 

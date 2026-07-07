@@ -28,6 +28,7 @@ markers = [
     "bots: trading bots endpoints",
     "smoke: quick health checks",
     "schema: response schema validation",
+    "binance: tests that hit Binance API (may be blocked from cloud CI runners)",
 ]
 
 [tool.ruff]
