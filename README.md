@@ -1,5 +1,7 @@
 # LexxSoft API Tests
 
+[![Public API Tests](https://github.com/ClarenceFerreiro/lexx-soft/actions/workflows/public-tests.yml/badge.svg)](https://github.com/ClarenceFerreiro/lexx-soft/actions/workflows/public-tests.yml)
+
 Black-box API test suite for the LexxSoft trading platform (`https://lexx-trade.com`).
 
 ## What is tested
