@@ -1,119 +1,129 @@
-# LexxSoft API Tests
+# LexxSoft API tests
 
-[![Public API Tests](https://github.com/ClarenceFerreiro/lexx-soft/actions/workflows/public-tests.yml/badge.svg)](https://github.com/ClarenceFerreiro/lexx-soft/actions/workflows/public-tests.yml)
+[![Quality](https://github.com/ClarenceFerreiro/lexx-soft/actions/workflows/quality.yml/badge.svg)](https://github.com/ClarenceFerreiro/lexx-soft/actions/workflows/quality.yml)
+[![Live API Checks](https://github.com/ClarenceFerreiro/lexx-soft/actions/workflows/public-tests.yml/badge.svg)](https://github.com/ClarenceFerreiro/lexx-soft/actions/workflows/public-tests.yml)
 
-Black-box API test suite for the LexxSoft trading platform (`https://lexx-trade.com`).
-Written after leaving the company, so all endpoints are discovered by inspecting
-the production web app and confirming behaviour against live APIs.
+A small black-box test suite for the publicly observable API contracts of the
+LexxSoft trading platform and its market-data providers.
 
-## What is tested
+This is an independent portfolio project created after my work on the product.
+It uses public behaviour and a user-controlled test account; it contains no
+company source code, internal documentation, credentials, or customer data.
 
-- **Public market data upstreams** that the LexxSoft terminal consumes directly:
-  - **OKX** (`/api/v5/market/*`) — smoke and schema tests, CI-friendly
-  - **Binance Spot** (`/api/v3/*`) and **USDⓈ-M Futures** (`/fapi/v1/*`) — smoke and schema tests,
-    skipped in GitHub Actions because Binance blocks GitHub Cloud IP ranges
-- **LexxSoft backend smoke tests** that require no credentials:
-  - `/api/auth/login` existence and reCAPTCHA behaviour
-- **WebSocket streams** used by the LexxSoft terminal:
-  - Binance Spot (`wss://stream.binance.com`)
-  - Binance Futures (`wss://fstream.binance.com`) — connection only, often no data from some regions
-  - OKX (`wss://ws.okx.com`)
-- **Authenticated endpoints** with a manually-obtained access token:
-  - token validity (`/api/user/me`, `/api/user/profile`)
-  - RBAC for free-tier accounts (`403 Not supported role` on premium paths)
-  - private bot/order/portfolio/settings endpoints discovered in the terminal bundle (`/api/private/*`)
-  - security observation: some `/api/private/*` GET endpoints are reachable without auth
+## What is covered
+
+| Area                       | Checks                                                                            | Where it runs    |
+| -------------------------- | --------------------------------------------------------------------------------- | ---------------- |
+| LexxSoft backend           | Login error contracts and anonymous access boundaries                             | Live CI          |
+| OKX REST                   | Smoke, schema, error handling, modest rate-limit observations                     | Live CI          |
+| OKX WebSocket              | Connection and subscription handshake                                             | Live CI          |
+| Binance Spot/Futures       | REST smoke, schemas, edge cases, WebSocket                                        | Local            |
+| Authenticated LexxSoft API | Endpoint behaviour, RBAC, bot/order/portfolio/settings routes                     | Local with token |
+| API client                 | URL construction, explicit Bearer headers, query parameters, credential isolation | Deterministic CI |
+
+The test design and result semantics are described in
+[`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md).
+
+## Why there are two workflows
+
+- **Quality** runs `ruff` and unit tests with coverage. It has no network dependency.
+- **Live API Checks** exercises public REST/WebSocket contracts and uploads an HTML report.
+
+A green live badge covers only the CI-compatible subset. Binance checks are excluded
+because Binance can block GitHub-hosted runner IPs, and authenticated checks are local
+because access tokens are not stored in this public repository.
 
 ## Quick start
 
 ```bash
-cd lexxsoft-api-tests
+git clone https://github.com/ClarenceFerreiro/lexx-soft.git
+cd lexx-soft
 python -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt
-.venv\Scripts\python -m pytest tests/public/ -v
 ```
 
-## Run by marker
+Windows:
 
 ```bash
-# CI-friendly public tests (OKX + LexxSoft auth)
-pytest -m "public and not binance" -v
+.venv\Scripts\python -m pip install -e ".[dev]"
+.venv\Scripts\python -m pytest tests/unit/ -v
+```
 
-# Local full run including Binance
+Linux/macOS:
+
+```bash
+.venv/bin/python -m pip install -e ".[dev]"
+.venv/bin/python -m pytest tests/unit/ -v
+```
+
+## Test commands
+
+```bash
+# Deterministic checks: no credentials or network
+ruff check .
+pytest tests/unit/ --cov=lexxsoft_client --cov-report=term-missing
+
+# CI-compatible live checks
+pytest tests/public/ tests/websocket/ tests/auth/ \
+  -m "not binance and (not auth or anonymous)" -v
+
+# Full public REST suite, including Binance
 pytest -m public -v
 
-# WebSocket streams
+# WebSocket checks
 pytest -m websocket -v
 
-# Rate-limit observation tests
-pytest -m rate_limit -v
+# Authenticated checks; requires LEXX_ACCESS_TOKEN
+pytest -m "auth and not anonymous" -v
 
-# Authenticated tests (requires LEXX_ACCESS_TOKEN in .env)
-pytest tests/auth/ -v
-
-# Smoke / schema filters
-pytest -m smoke -v
-pytest -m schema -v
+# Generate a self-contained report
+pytest --html=reports/report.html --self-contained-html
 ```
 
-## HTML report
+## Authenticated checks
+
+LexxSoft login is protected by reCAPTCHA. The suite does not bypass it. To run
+private checks, log in manually with a user-controlled account, copy the temporary
+Bearer token from a request in browser DevTools, and place it in a local `.env`:
+
+```dotenv
+LEXX_ACCESS_TOKEN=replace-with-a-short-lived-token
+```
+
+Then run:
 
 ```bash
-pytest tests/public/ tests/auth/ --html=reports/report.html --self-contained-html
+pytest -m "auth and not anonymous" -v
 ```
 
-Open `reports/report.html` in a browser. GitHub Actions also uploads the report
-as an artifact named `pytest-report-py<version>`.
-
-## Authenticated tests
-
-LexxSoft login is protected by reCAPTCHA, so automated login is not supported.
-Instead, provide a manually extracted Bearer token:
-
-1. Log in to `https://lexx-trade.com/terminal/login` in your browser.
-2. Open DevTools → Network → Fetch/XHR.
-3. Find any request to `api.lexx-trade.com` and copy the `Authorization: Bearer ***` header value.
-4. Paste the token into `.env` as `LEXX_ACCESS_TOKEN=***`.
-5. Run: `pytest tests/auth/ -v`
-
-If the account has a free role, premium endpoints return `403 Not supported role`.
-The auth smoke tests document this behaviour.
-
-## CI
-
-GitHub Actions runs public tests that do **not** hit Binance on every push and PR.
-Binance tests are marked with `pytest.mark.binance` and excluded from CI because
-Binance returns HTTP 451 for GitHub Cloud runners.
+The `.env` file is excluded from Git. Authenticated checks may be skipped or marked
+`xfail` when a prerequisite is absent or a documented backend defect is reproduced.
 
 ## Project structure
 
-```
-lexxsoft-api-tests/
-├── src/lexxsoft_client/          # Thin API client
+```text
+lexx-soft/
+├── .github/workflows/
+│   ├── quality.yml                # deterministic lint and unit tests
+│   └── public-tests.yml           # live CI-compatible API checks
+├── docs/
+│   └── TEST_STRATEGY.md           # scope, layers, semantics, safety boundaries
+├── src/lexxsoft_client/
+│   └── client.py                  # thin requests-based API client
 ├── tests/
-│   ├── public/
-│   │   ├── schemas.py              # Pydantic response models
-│   │   ├── test_binance_smoke.py   # Binance spot/futures smoke tests
-│   │   ├── test_binance_schema.py  # Binance schema/edge-case tests
-│   │   ├── test_okx_smoke.py       # OKX + LexxSoft auth smoke tests
-│   │   ├── test_okx_schema.py      # OKX schema/edge-case tests
-│   │   └── test_rate_limits.py     # Rate-limit observation tests
-│   ├── auth/
-│   │   ├── test_auth_smoke.py     # Authenticated token/RBAC tests
-│   │   └── test_private_endpoints.py # Private bot/order/portfolio/settings tests
-│   ├── websocket/
-│   │   └── test_public_websocket.py # Public exchange WebSocket tests
-│   ├── bots/                      # Trading bot tests (reserved)
-│   └── conftest.py                # pytest fixtures
-├── .github/workflows/            # CI + HTML report artifacts
-├── pyproject.toml
-├── requirements.txt
+│   ├── unit/                      # deterministic client tests
+│   ├── public/                    # REST smoke, schema, and rate-limit checks
+│   ├── auth/                      # anonymous and token-based access checks
+│   └── websocket/                 # public stream checks
 ├── .env.example
-└── README.md
+└── pyproject.toml
 ```
 
-## Methodology
+## Current limitations
 
-This is a black-box test suite. Endpoints were discovered by inspecting the
-production LexxSoft terminal, and assertions were validated against live
-responses from upstream exchanges and the LexxSoft backend.
+- The project validates externally observable contracts, not internal implementation.
+- Live checks can fail because of upstream changes, regional restrictions, or network issues.
+- Authenticated coverage is limited by the permissions and state of the test account.
+- Binance tests are not part of GitHub-hosted CI.
+
+These constraints are kept explicit so a passing badge is not presented as broader
+coverage than the workflow actually provides.
