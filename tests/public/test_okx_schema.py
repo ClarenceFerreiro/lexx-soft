@@ -51,13 +51,14 @@ class TestOkxErrorHandling:
 
     def test_unknown_instid_returns_error_code(self):
         response = requests.get(
-            f"{self.BASE_URL}/tickers",
-            params={"instType": "SPOT", "instId": "FAKE-TOKEN"},
+            f"{self.BASE_URL}/ticker",
+            params={"instId": "FAKE-TOKEN"},
             timeout=30,
         )
         assert response.status_code == 200
         data = response.json()
-        assert data.get("code") in {"0", "51001"}  # 51001 = instrument not found
+        assert data.get("code") == "51001"  # instrument not found
+        assert data.get("data") == []
 
     def test_missing_inst_type_returns_400(self):
         response = requests.get(f"{self.BASE_URL}/tickers", timeout=30)

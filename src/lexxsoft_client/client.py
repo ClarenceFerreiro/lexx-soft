@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
-import os
-from typing import Any
+from typing import Any, Self
 
 import requests
-from dotenv import load_dotenv
-
-load_dotenv()
 
 DEFAULT_BASE_URL = "https://api.lexx-trade.com/api"
 DEFAULT_BASE_URL_2 = "https://api2.lexx-trade.com/api"
 TIMEOUT = 30
+
+
+class _NoNetrcAuth(requests.auth.AuthBase):
+    """Prevent requests from silently applying credentials from ``.netrc``."""
+
+    def __call__(self, request: requests.PreparedRequest) -> requests.PreparedRequest:
+        return request
 
 
 class LexxClient:
@@ -30,17 +33,19 @@ class LexxClient:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.session = requests.Session()
+        # Preserve proxy/CA environment support while disabling implicit .netrc auth.
+        self.session.auth = _NoNetrcAuth()
         self.session.headers.update(
             {
                 "Accept": "application/json",
                 "Content-Type": "application/json",
-                "User-Agent": "lexxsoft-api-tests/0.1.0",
+                "User-Agent": "lexxsoft-api-tests/0.2.0",
             }
         )
-        self.email = email or os.getenv("LEXX_EMAIL")
-        self.password = password or os.getenv("LEXX_PASSWORD")
-        self.totp_code = totp_code or os.getenv("LEXX_TOTP_CODE")
-        self.access_token = access_token or os.getenv("LEXX_ACCESS_TOKEN")
+        self.email = email
+        self.password = password
+        self.totp_code = totp_code
+        self.access_token = access_token
         if self.access_token:
             self.session.headers.update(self.auth_headers())
 
@@ -48,15 +53,15 @@ class LexxClient:
         path = path.lstrip("/")
         return f"{self.base_url}/{path}"
 
-    def get(self, path: str, params: dict[str, Any] | None = None, **kwargs: Any) -> requests.Response:
-        return self.session.get(
-            self._url(path), params=params, timeout=self.timeout, **kwargs
-        )
+    def get(
+        self, path: str, params: dict[str, Any] | None = None, **kwargs: Any
+    ) -> requests.Response:
+        return self.session.get(self._url(path), params=params, timeout=self.timeout, **kwargs)
 
-    def post(self, path: str, json: dict[str, Any] | None = None, **kwargs: Any) -> requests.Response:
-        return self.session.post(
-            self._url(path), json=json, timeout=self.timeout, **kwargs
-        )
+    def post(
+        self, path: str, json: dict[str, Any] | None = None, **kwargs: Any
+    ) -> requests.Response:
+        return self.session.post(self._url(path), json=json, timeout=self.timeout, **kwargs)
 
     def auth_headers(self) -> dict[str, str]:
         if not self.access_token:
@@ -80,8 +85,8 @@ class LexxClient:
                 self.session.headers.update(self.auth_headers())
         return response
 
-    def __enter__(self) -> "LexxClient":
+    def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *exc: Any) -> None:
+    def __exit__(self, *exc: object) -> None:
         self.session.close()

@@ -1,7 +1,7 @@
 [project]
 name = "lexxsoft-api-tests"
-version = "0.1.0"
-description = "Black-box API tests for LexxSoft trading platform"
+version = "0.2.0"
+description = "Black-box API tests for the LexxSoft trading platform"
 requires-python = ">=3.11"
 dependencies = [
     "pytest>=8.0",
@@ -14,18 +14,25 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest-xdist",
-    "responses",
-    "ruff",
+    "pytest-cov>=5.0",
+    "pytest-xdist>=3.5",
+    "responses>=0.25",
+    "ruff>=0.8",
 ]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-v --tb=short"
 markers = [
+    "unit: deterministic tests with no network access",
     "public: public market-data endpoints (no auth required)",
     "auth: authenticated endpoints",
+    "anonymous: access-control checks that do not require credentials",
     "bots: trading bots and private portfolio/order endpoints",
     "smoke: quick health checks",
     "schema: response schema validation",
@@ -37,3 +44,15 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM"]
+
+[tool.coverage.run]
+branch = true
+source = ["lexxsoft_client"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 85

@@ -58,9 +58,7 @@ class TestOkxRateLimits:
         assert response.status_code == 200
         headers = {k.lower() for k in response.headers}
         # OKX may not return rate-limit headers on every public route
-        has_rate_header = any(
-            h in headers for h in ("ok-visible-api-limit", "ok-used-weight")
-        )
+        has_rate_header = any(h in headers for h in ("ok-visible-api-limit", "ok-used-weight"))
         assert response.status_code == 200
         if not has_rate_header:
             pytest.skip("OKX did not return rate-limit headers on this route")
@@ -100,6 +98,4 @@ class TestLexxSoftRateLimits:
             statuses.add(response.status_code)
             time.sleep(0.2)
 
-        assert statuses.issubset({400, 401, 403, 429, 502, 503, 504}), (
-            f"Unexpected statuses: {statuses}"
-        )
+        assert statuses.issubset({400, 401, 403, 429}), f"Unexpected statuses: {statuses}"

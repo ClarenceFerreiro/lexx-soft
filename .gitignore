@@ -10,3 +10,8 @@ __pycache__/
 .vscode/
 *.log
 reports/
+.coverage
+coverage.xml
+htmlcov/
+build/
+dist/

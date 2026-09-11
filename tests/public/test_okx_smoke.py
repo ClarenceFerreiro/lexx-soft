@@ -56,10 +56,13 @@ class TestLexxSoftAuthSmoke:
         assert data.get("status") == "failed"
         assert "recaptcha" in data.get("msg", "").lower()
 
-    def test_auth_login_rejects_invalid_email_format(self, public_client):
-        """The login endpoint must reject malformed email addresses."""
+    def test_auth_login_rejects_malformed_payload_with_error_shape(self, public_client):
+        """Malformed login input must return the documented error envelope."""
         response = public_client.post(
             "/auth/login",
-            json={"email": "not-an-email", "password": "wrongpassword"},
+            json={"email": "not-an-email"},
         )
-        assert response.status_code in (400, 422)
+        assert response.status_code == 400
+        data = response.json()
+        assert data.get("status") == "failed"
+        assert isinstance(data.get("msg"), str) and data["msg"]
