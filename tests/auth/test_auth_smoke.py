@@ -6,29 +6,16 @@ The token can be obtained from the browser after manual login (see README).
 
 from __future__ import annotations
 
-import os
-
 import pytest
-
-from lexxsoft_client import LexxClient
 
 pytestmark = [pytest.mark.auth, pytest.mark.smoke]
 
 
-@pytest.fixture(scope="module")
-def auth_client():
-    token = os.getenv("LEXX_ACCESS_TOKEN")
-    if not token:
-        pytest.skip("LEXX_ACCESS_TOKEN is not set")
-    with LexxClient(access_token=token) as client:
-        yield client
+class TestAuthenticatedUserEndpoints:
+    """Document user endpoint behaviour with a manually supplied token."""
 
-
-class TestAuthTokenValidity:
-    """Verify that the provided access token is accepted by the backend."""
-
-    def test_user_me_is_authenticated(self, auth_client):
-        """A valid token should reach the endpoint (role check is separate)."""
+    def test_user_me_documents_role_aware_response(self, auth_client):
+        """A configured token may still be rejected by role-based access control."""
         response = auth_client.get("/api/user/me")
         assert response.status_code in (200, 403)
         if response.status_code == 200:
@@ -59,14 +46,15 @@ class TestFreeRoleRestrictions:
     def test_premium_endpoints_require_paid_role(self, auth_client, path):
         """Free-role accounts should be rejected from premium endpoints."""
         response = auth_client.get(path)
-        assert response.status_code in (403, 404)
-        if response.status_code == 403:
-            data = response.json()
-            assert data.get("status") == "failed"
+        assert response.status_code == 403
+        data = response.json()
+        assert data.get("status") == "failed"
 
 
 class TestAuthenticatedVsAnonymous:
     """Verify that authenticated requests differ from anonymous ones."""
+
+    pytestmark = pytest.mark.anonymous
 
     def test_user_me_requires_auth(self, public_client):
         """Anonymous requests to user endpoints should be rejected."""
